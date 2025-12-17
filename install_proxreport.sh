@@ -72,15 +72,16 @@ if [[ "$TLS_ASK" =~ ^[Yy]$ ]]; then
   else
     warn "Certificados TLS ya existen"
   fi
+  info "Certificado TLS autofirmado creado"
 fi
 
-
 ### Crear Cuenta ###
+info "Crear usuario para el dashboard"
 read -rp "Nombre de usuario: " ADMIN_USER
 ADMIN_USER=${ADMIN_USER:-admin}
-info "Creando usuario..."
 info "Introduzca la contraseña:"
 PYTHONPATH="$INSTALL_DIR" "$PYTHON_BIN" -m proxreport hash-password --username "$ADMIN_USER" > "$CONFIG_DIR/users.txt"
+info "Creando usuario..."
 chmod 600 "$CONFIG_DIR/users.txt"
 
 ### SYSTEMD ###
