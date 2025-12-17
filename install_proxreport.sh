@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 set -e
 
-### VARIABLES POR DEFECTO ###
+### VARIABLES ###
 REPO_URL="https://github.com/N3tGarde/proxreport.git"
-DEFAULT_INSTALL_DIR="/opt/proxreport"
-DEFAULT_CONFIG_DIR="/etc/proxreport"
+INSTALL_DIR="/opt/proxreport"
+CONFIG_DIR="/etc/proxreport"
 SERVICE_NAME="proxreport"
 PYTHON_BIN="/usr/bin/python3"
 
@@ -14,6 +14,11 @@ err()  { echo -e "\033[1;31m[ERROR]\033[0m $1"; exit 1; }
 
 ### CHECK ROOT ###
 [[ $EUID -ne 0 ]] && err "Debe ejecutarse como root"
+
+info "Directorios que se usarán:"
+echo "  Instalación: $INSTALL_DIR"
+echo "  Configuración: $CONFIG_DIR"
+echo
 
 ### DEPENDENCIAS ###
 dependencies=(git python3 openssl)
@@ -30,13 +35,6 @@ for cmd in "${dependencies[@]}"; do
         fi
     fi
 done
-
-### INTERACTIVO ###
-read -rp "Directorio de instalación [$DEFAULT_INSTALL_DIR]: " INSTALL_DIR
-INSTALL_DIR=${INSTALL_DIR:-$DEFAULT_INSTALL_DIR}
-
-read -rp "Directorio de configuración [$DEFAULT_CONFIG_DIR]: " CONFIG_DIR
-CONFIG_DIR=${CONFIG_DIR:-$DEFAULT_CONFIG_DIR}
 
 ### Usuario admin personalizado ###
 read -rp "Nombre de usuario admin [admin]: " ADMIN_USER
@@ -61,8 +59,6 @@ if [[ -d "$INSTALL_DIR/.git" ]]; then
 else
   info "Clonando repositorio..."
   git clone "$REPO_URL" "$INSTALL_DIR"
-else
-  git -C "$INSTALL_DIR" pull
 fi
 
 ### DIRECTORIOS ###
