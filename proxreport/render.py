@@ -215,3 +215,72 @@ def _capacity_row(row: Dict[str, object]) -> str:
     disk_gb = int(row["disk_gb"])
     est = int(row["est"])
     return f"<tr><td>{name}</td><td>{vcpus}</td><td>{ram_mb} MiB</td><td>{disk_gb} GiB</td><td><code>{est}</code></td></tr>"
+
+def render_cluster_dashboard(nodes: list[dict]) -> str:
+    """
+    nodes: lista de dicts con:
+      - name
+      - cpu_pct
+      - cpu_state
+      - ram_pct
+      - ram_state
+      - disk_pct
+      - disk_state
+      - est_vms
+    """
+
+    cards_html = []
+
+    for n in nodes:
+        cards_html.append(f"""
+        <div class="node-card {n['cpu_state']}">
+          <a href="/node/{html.escape(n['name'])}">
+            <h2>{html.escape(n['name'])}</h2>
+
+            {_compact_row("CPU", n['cpu_pct'], n['cpu_state'])}
+            {_compact_row("RAM", n['ram_pct'], n['ram_state'])}
+            {_compact_row("Disk", n['disk_pct'], n['disk_state'])}
+
+            <div class="small" style="margin-top:6px;">
+              Est. VMs: <code>{n['est_vms']}</code>
+            </div>
+          </a>
+        </div>
+        """)
+
+    return f"""<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ProxReport - Cluster</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>ProxReport — Cluster overview</h1>
+      <div class="small">{len(nodes)} nodes</div>
+    </div>
+
+    <div class="grid grid-nodes">
+      {''.join(cards_html)}
+    </div>
+  </div>
+</body>
+</html>
+"""
+
+def _compact_row(label: str, pct: float | None, state: str) -> str:
+    pct_val = 0 if pct is None else max(0, min(100, pct))
+    pct_str = "n/a" if pct is None else f"{pct_val:.1f}%"
+
+    return f"""
+    <div class="row compact">
+      <div class="label">{label}</div>
+      <div class="bar">
+        <div class="fill {state}" style="width:{pct_val:.1f}%;"></div>
+      </div>
+      <div class="value {state}">{pct_str}</div>
+    </div>
+    """
