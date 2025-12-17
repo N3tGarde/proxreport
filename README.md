@@ -1,17 +1,56 @@
 # ProxReport
-Lightweight, self-hosted, one-page dashboard for a Proxmox VE node.
 
-Goals:
-- Minimal dependencies (Python standard library only)
-- Host health + capacity planning
-- HTTPS + HTTP Basic Auth
-- Collect metrics from the host OS (no Proxmox API)
+**ProxReport** es un panel ligero, autoalojado y de una sola página para **Proxmox VE**, orientado a la **monitorización del nodo host** sin depender de la API de Proxmox.
 
-## Quick start (local / dev)
-1) Create a config:
-- Copy `config.example.ini` to `config.ini` and adjust ports/cert paths.
+El proyecto está pensado para administradores que quieren una vista clara del estado del host, con un despliegue sencillo, seguro y con dependencias mínimas.
 
-2) Create a self-signed cert (example):
+---
+
+## 🎯 Objetivos del proyecto
+
+- Dependencias mínimas (**solo librería estándar de Python**)
+- Panel web simple y rápido (one‑page dashboard)
+- Monitorización del **host Proxmox**, no del clúster vía API
+- Información de salud del sistema y capacidad
+- Despliegue **self‑hosted**
+- Soporte HTTPS
+- Autenticación **HTTP Basic Auth**
+- Fácil integración con systemd
+
+---
+
+## 🧱 Qué monitoriza
+
+ProxReport obtiene la información directamente del sistema operativo del host Proxmox:
+
+- CPU (uso y carga)
+- Memoria
+- Almacenamiento
+- Estado general del sistema
+- Datos útiles para **capacity planning**
+
+> ⚠️ No utiliza la API de Proxmox. Esto reduce dependencias, complejidad y permisos.
+
+---
+
+## 🚀 Inicio rápido (local / desarrollo)
+
+### 1️⃣ Crear la configuración
+
+Copia el archivo de ejemplo y ajústalo a tu entorno:
+
+```bash
+cp config.example.ini config.ini
+```
+
+Configura:
+- Puertos HTTP / HTTPS
+- Rutas de certificados TLS
+
+---
+
+### 2️⃣ Crear certificado TLS autofirmado (ejemplo)
+
 ```bash
 mkdir -p tls
 openssl req -x509 -newkey rsa:2048 -nodes \
@@ -19,57 +58,149 @@ openssl req -x509 -newkey rsa:2048 -nodes \
   -days 365 -subj "/CN=proxreport"
 ```
 
-3) Create a users file entry:
+---
+
+### 3️⃣ Crear usuarios (Basic Auth)
+
+Genera una entrada de usuario:
+
 ```bash
 python3 -m proxreport hash-password --username admin
-# You'll be prompted for a password; it prints a line like:
-# admin:<salt_hex>:<sha256_hex>
 ```
-Save the output line to `users.txt`.
 
-4) Run:
+El comando pedirá la contraseña y devolverá una línea como:
+
+```text
+admin:<salt_hex>:<sha256_hex>
+```
+
+Guarda esa línea en el archivo `users.txt`.
+
+---
+
+### 4️⃣ Ejecutar el servicio
+
 ```bash
 python3 -m proxreport serve --config ./config.ini
 ```
-Open: `https://<host>:<https_port>/`
 
-## Smoke test
-- Confirm redirect:
-```bash
-curl -I http://<host>:<http_port>/
-```
-- Confirm auth + HTTPS:
-```bash
-curl -k -u <user>:<password> https://<host>:<https_port>/
+Accede desde el navegador:
+
+```text
+https://<IP_DEL_HOST>:<PUERTO_HTTPS>/
 ```
 
-On a Proxmox VE host you can also do a quick syntax check:
+> ℹ️ Se recomienda usar **IP** en lugar de hostname si no hay DNS configurado.
+
+---
+
+## 🔍 Smoke tests rápidos
+
+### Comprobar redirección HTTP → HTTPS
+
+```bash
+curl -I http://<IP_DEL_HOST>:<PUERTO_HTTP>/
+```
+
+### Comprobar autenticación y HTTPS
+
+```bash
+curl -k -u usuario:password https://<IP_DEL_HOST>:<PUERTO_HTTPS>/
+```
+
+---
+
+## 🧪 Comprobación rápida en Proxmox VE
+
+Para verificar que no hay errores de sintaxis:
+
 ```bash
 python3 -m py_compile proxreport/*.py
 ```
 
-## Deploy on a Proxmox VE host (systemd)
-Suggested layout:
-- Repo: `/opt/proxreport`
-- Config: `/etc/proxreport/config.ini`
-- Users: `/etc/proxreport/users.txt`
-- TLS: `/etc/proxreport/tls/{cert.pem,key.pem}`
+---
 
-Steps:
-1) Copy the repo to `/opt/proxreport`.
-2) Create `/etc/proxreport/` and place config/users/tls.
-3) Install the unit:
-- Copy `systemd/proxreport.service` to `/etc/systemd/system/`
-- `systemctl daemon-reload`
-- `systemctl enable --now proxreport`
+## 🖥️ Despliegue en Proxmox VE (systemd)
 
-If you want to bind to `80/443`, consider enabling the commented capability lines in the unit.
+### Estructura recomendada
 
-## Notes on password storage
-Users are stored as `username:salt_hex:sha256_hex` where:
-- `sha256_hex = SHA256(salt_bytes + password_utf8)`
+```text
+/opt/proxreport               # Código de la aplicación
+/etc/proxreport/config.ini    # Configuración
+/etc/proxreport/users.txt     # Usuarios
+/etc/proxreport/tls/          # Certificados TLS
+  ├── cert.pem
+  └── key.pem
+```
 
-This avoids storing plaintext passwords and keeps the implementation stdlib-only.
+---
 
-## License
-MIT (see `LICENSE`).
+### Pasos de instalación
+
+1️⃣ Copia el repositorio a:
+
+```bash
+/opt/proxreport
+```
+
+2️⃣ Crea el directorio de configuración:
+
+```bash
+mkdir -p /etc/proxreport/tls
+```
+
+3️⃣ Copia `config.ini`, `users.txt` y los certificados TLS
+
+4️⃣ Instala el servicio systemd:
+
+```bash
+cp systemd/proxreport.service /etc/systemd/system/
+systemctl daemon-reload
+systemctl enable --now proxreport
+```
+
+---
+
+### Puertos 80 / 443
+
+Si deseas escuchar directamente en los puertos **80/443**, revisa y habilita las líneas de capacidades comentadas en el archivo:
+
+```text
+systemd/proxreport.service
+```
+
+---
+
+## 🔐 Almacenamiento de contraseñas
+
+Los usuarios se almacenan en el formato:
+
+```text
+username:salt_hex:sha256_hex
+```
+
+Donde:
+
+```text
+sha256_hex = SHA256(salt_bytes + password_utf8)
+```
+
+Esto permite:
+- No almacenar contraseñas en texto plano
+- Mantener una implementación simple
+- Evitar dependencias externas (solo Python stdlib)
+
+---
+
+## 📄 Licencia
+
+Este proyecto se distribuye bajo licencia **MIT**.
+
+Consulta el archivo `LICENSE` para más información.
+
+---
+
+## 📌 Proyecto
+
+**Proyecto de Proxmox – ProxReport**  
+Panel ligero y seguro para la supervisión del host Proxmox VE.
