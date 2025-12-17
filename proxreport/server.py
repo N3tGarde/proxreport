@@ -16,29 +16,36 @@ from .render import render_dashboard, render_cluster_dashboard
 
 _LOG = logging.getLogger("proxreport")
 
-
-def _repo_root() -> Path:
-    # proxreport/server.py -> package dir -> repo root
-    return Path(__file__).resolve().parent.parent
-
-
-def _static_path() -> Path:
-    # Prefer repo static/ next to package, fallback to cwd/static for deployment.
-    p1 = _repo_root() / "static" / "style.css"
-    if p1.exists():
-        return p1
-    p2 = Path(os.getcwd()) / "static" / "style.css"
-    return p2
-
-
 class DashboardHandler(BaseHTTPRequestHandler):
     server_version = "proxreport"
 
+    def _serve_static(self) -> None:
+        static_root = Path("/opt/proxreport/static")   
+        rel = self.path[len("/static/"):]
+        rel = rel.split("?", 1)[0]    
+        p = (static_root / rel).resolve()    
+        if not p.exists() or not p.is_file() or not str(p).startswith(str(static_root)):
+            self.send_response(404)
+            self.end_headers()
+            return    
+        data = p.read_bytes()    
+        if p.suffix == ".css":
+            ctype = "text/css; charset=utf-8"
+        else:
+            ctype = "application/octet-stream"  
+        self.send_response(200)
+        self.send_header("Content-Type", ctype)
+        self.send_header("Content-Length", str(len(data)))
+        self.send_header("Cache-Control", "public, max-age=3600")
+        self.end_headers()
+        self.wfile.write(data)
+    
     def do_GET(self) -> None:
         cfg: AppConfig = self.server.app_config  # type: ignore[attr-defined]
     
-        if self.path == "/static/style.css":
-            return self._serve_style()
+        if self.path.startswith("/static/"):
+            return self._serve_static()
+
     
         if not require_basic_auth(self, cfg.server.users_file):
             return
