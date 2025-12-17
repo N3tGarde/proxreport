@@ -107,7 +107,22 @@ cp "$INSTALL_DIR/systemd/proxreport.service" /etc/systemd/system/
 systemctl daemon-reload
 systemctl enable --now "$SERVICE_NAME"
 
+### OBTENER PUERTO HTTPS DESDE CONFIG ###
+HTTPS_PORT=$(awk -F= '
+  /^[[:space:]]*https_port[[:space:]]*=/ {
+    gsub(/[[:space:]]*/, "", $2)
+    print $2
+  }' "$CONFIG_DIR/config.ini")
+
+### OBTENER IP LOCAL ###
+SERVER_IP=$(hostname -I | awk '{print $1}')
+
+# Fallback por seguridad
+if [[ -z "$SERVER_IP" ]]; then
+  SERVER_IP="127.0.0.1"
+fi
+
 info "Instalación completada 🎉"
-echo "URL: https://$(hostname):<PUERTO>"
+echo "URL: https://${SERVER_IP}:${HTTPS_PORT}"
 echo "Config: $CONFIG_DIR/config.ini"
 echo "Logs: journalctl -u $SERVICE_NAME -f"
