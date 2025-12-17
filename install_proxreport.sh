@@ -40,15 +40,6 @@ done
 read -rp "Nombre de usuario admin [admin]: " ADMIN_USER
 ADMIN_USER=${ADMIN_USER:-admin}
 
-while true; do
-  read -rsp "Contraseña de admin: " ADMIN_PASS
-  echo
-  read -rsp "Confirmar contraseña: " ADMIN_PASS2
-  echo
-  [[ "$ADMIN_PASS" == "$ADMIN_PASS2" ]] && break
-  echo "⚠️ Las contraseñas no coinciden, intenta nuevamente."
-done
-
 read -rp "¿Generar TLS autofirmado? [Y/n]: " TLS_ASK
 TLS_ASK=${TLS_ASK:-Y}
 
@@ -88,7 +79,7 @@ fi
 
 ### USUARIO ADMIN ###
 info "Creando usuario..."
-printf "%s\n" "$ADMIN_PASS" | PYTHONPATH="$INSTALL_DIR" "$PYTHON_BIN" -m proxreport hash-password --username "$ADMIN_USER" > "$CONFIG_DIR/users.txt"
+PYTHONPATH="$INSTALL_DIR" "$PYTHON_BIN" -m proxreport hash-password --username "$ADMIN_USER" > "$CONFIG_DIR/users.txt"
 chmod 600 "$CONFIG_DIR/users.txt"
 
 ### SYSTEMD ###
