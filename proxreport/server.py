@@ -35,64 +35,64 @@ class DashboardHandler(BaseHTTPRequestHandler):
     server_version = "proxreport"
 
     def do_GET(self) -> None:
-    cfg: AppConfig = self.server.app_config  # type: ignore[attr-defined]
-
-    if self.path == "/static/style.css":
-        return self._serve_style()
-
-    if not require_basic_auth(self, cfg.server.users_file):
-        return
-
-    # -------------------------
-    # Single node dashboard
-    # -------------------------
-    if self.path == "/":
-        snap = snapshot(cfg.mountpoints)
-        body = render_dashboard(cfg, snap).encode("utf-8")
-
-    # -------------------------
-    # Cluster overview (mock)
-    # -------------------------
-    elif self.path == "/cluster":
-        # ⚠️ Datos de ejemplo (por ahora)
-        nodes = [
-            {
-                "name": "pve-node01",
-                "cpu_pct": 34.0,
-                "cpu_state": "state-green",
-                "ram_pct": 62.0,
-                "ram_state": "state-amber",
-                "disk_pct": 51.0,
-                "disk_state": "state-green",
-                "est_vms": 5,
-            },
-            {
-                "name": "pve-node02",
-                "cpu_pct": 91.0,
-                "cpu_state": "state-red",
-                "ram_pct": 74.0,
-                "ram_state": "state-amber",
-                "disk_pct": 88.0,
-                "disk_state": "state-amber",
-                "est_vms": 1,
-            },
-        ]
-
-        body = render_cluster_dashboard(nodes).encode("utf-8")
-
-    else:
-        self.send_response(404)
-        self.send_header("Content-Type", "text/plain; charset=utf-8")
+        cfg: AppConfig = self.server.app_config  # type: ignore[attr-defined]
+    
+        if self.path == "/static/style.css":
+            return self._serve_style()
+    
+        if not require_basic_auth(self, cfg.server.users_file):
+            return
+    
+        # -------------------------
+        # Single node dashboard
+        # -------------------------
+        if self.path == "/":
+            snap = snapshot(cfg.mountpoints)
+            body = render_dashboard(cfg, snap).encode("utf-8")
+    
+        # -------------------------
+        # Cluster overview (mock)
+        # -------------------------
+        elif self.path == "/cluster":
+            # ⚠️ Datos de ejemplo (por ahora)
+            nodes = [
+                {
+                    "name": "pve-node01",
+                    "cpu_pct": 34.0,
+                    "cpu_state": "state-green",
+                    "ram_pct": 62.0,
+                    "ram_state": "state-amber",
+                    "disk_pct": 51.0,
+                    "disk_state": "state-green",
+                    "est_vms": 5,
+                },
+                {
+                    "name": "pve-node02",
+                    "cpu_pct": 91.0,
+                    "cpu_state": "state-red",
+                    "ram_pct": 74.0,
+                    "ram_state": "state-amber",
+                    "disk_pct": 88.0,
+                    "disk_state": "state-amber",
+                    "est_vms": 1,
+                },
+            ]
+    
+            body = render_cluster_dashboard(nodes).encode("utf-8")
+    
+        else:
+            self.send_response(404)
+            self.send_header("Content-Type", "text/plain; charset=utf-8")
+            self.end_headers()
+            self.wfile.write(b"Not found\n")
+            return
+    
+        self.send_response(200)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self.send_header("Cache-Control", "no-store")
         self.end_headers()
-        self.wfile.write(b"Not found\n")
-        return
-
-    self.send_response(200)
-    self.send_header("Content-Type", "text/html; charset=utf-8")
-    self.send_header("Content-Length", str(len(body)))
-    self.send_header("Cache-Control", "no-store")
-    self.end_headers()
-    self.wfile.write(body)
+        self.wfile.write(body)
 
     def log_message(self, fmt: str, *args) -> None:  # noqa: N802
         _LOG.info("%s - %s", self.address_string(), fmt % args)
