@@ -88,7 +88,7 @@ fi
 
 ### USUARIO ADMIN ###
 info "Creando usuario admin personalizado..."
-echo -n "$ADMIN_PASS" | "$PYTHON_BIN" -m proxreport hash-password --username "$ADMIN_USER" > "$CONFIG_DIR/users.txt"
+PYTHONPATH="$INSTALL_DIR" "$PYTHON_BIN" -m proxreport hash-password --username "$ADMIN_USER" > "$CONFIG_DIR/users.txt"
 chmod 600 "$CONFIG_DIR/users.txt"
 
 ### SYSTEMD ###
