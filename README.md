@@ -33,6 +33,43 @@ ProxReport obtiene la información directamente del sistema operativo del host P
 
 ---
 
+## 🧰 Instalador y desinstalador automáticos
+
+El repositorio incluye un **instalador guiado** y un **desinstalador** para facilitar el despliegue y la eliminación completa de ProxReport en un host Proxmox VE.
+
+### ▶️ Instalador guiado
+
+Ejecuta el siguiente comando como **root** en el host Proxmox:
+
+```bash
+bash -c "$(wget -qO- https://raw.githubusercontent.com/N3tGarde/proxreport/main/install_proxreport.sh)"
+```
+
+El instalador:
+- Solicita los parámetros necesarios (Crear cuenta del dashboard, certificado TLS, etc.)
+- Crea la estructura recomendada en `/opt` y `/etc`
+- Configura el servicio systemd
+- Permite un despliegue rápido y consistente
+
+---
+
+### ⏹️ Desinstalador
+
+Para eliminar ProxReport del sistema:
+
+```bash
+bash -c "$(wget -qO- https://raw.githubusercontent.com/N3tGarde/proxreport/main/uninstall_proxreport.sh)"
+```
+
+El desinstalador:
+- Detiene y elimina el servicio systemd
+- Borra los archivos instalados
+- Limpia la configuración asociada
+
+> ⚠️ Asegúrate de revisar el script si has realizado modificaciones personalizadas.
+
+---
+
 ## 🚀 Inicio rápido (local / desarrollo)
 
 ### 1️⃣ Crear la configuración

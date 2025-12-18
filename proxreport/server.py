@@ -11,71 +11,95 @@ from typing import Optional
 from .auth import require_basic_auth
 from .config import AppConfig
 from .metrics import snapshot
-from .render import render_dashboard
+from .render import render_dashboard, render_cluster_dashboard
 
 
 _LOG = logging.getLogger("proxreport")
 
-
-def _repo_root() -> Path:
-    # proxreport/server.py -> package dir -> repo root
-    return Path(__file__).resolve().parent.parent
-
-
-def _static_path() -> Path:
-    # Prefer repo static/ next to package, fallback to cwd/static for deployment.
-    p1 = _repo_root() / "static" / "style.css"
-    if p1.exists():
-        return p1
-    p2 = Path(os.getcwd()) / "static" / "style.css"
-    return p2
-
-
 class DashboardHandler(BaseHTTPRequestHandler):
     server_version = "proxreport"
 
+    def _serve_static(self) -> None:
+        static_root = Path("/opt/proxreport/static")   
+        rel = self.path[len("/static/"):]
+        rel = rel.split("?", 1)[0]    
+        p = (static_root / rel).resolve()    
+        if not p.exists() or not p.is_file() or not str(p).startswith(str(static_root)):
+            self.send_response(404)
+            self.end_headers()
+            return    
+        data = p.read_bytes()    
+        if p.suffix == ".css":
+            ctype = "text/css; charset=utf-8"
+        else:
+            ctype = "application/octet-stream"  
+        self.send_response(200)
+        self.send_header("Content-Type", ctype)
+        self.send_header("Content-Length", str(len(data)))
+        self.send_header("Cache-Control", "public, max-age=3600")
+        self.end_headers()
+        self.wfile.write(data)
+    
     def do_GET(self) -> None:
         cfg: AppConfig = self.server.app_config  # type: ignore[attr-defined]
+    
+        if self.path.startswith("/static/"):
+            return self._serve_static()
 
-        if self.path == "/static/style.css":
-            return self._serve_style()
-
-        if self.path != "/":
+    
+        if not require_basic_auth(self, cfg.server.users_file):
+            return
+    
+        # -------------------------
+        # Single node dashboard
+        # -------------------------
+        if self.path == "/":
+            snap = snapshot(cfg.mountpoints)
+            body = render_dashboard(cfg, snap).encode("utf-8")
+    
+        # -------------------------
+        # Cluster overview (mock)
+        # -------------------------
+        elif self.path == "/cluster":
+            # ⚠️ Datos de ejemplo (por ahora)
+            nodes = [
+                {
+                    "name": "pve-node01",
+                    "cpu_pct": 34.0,
+                    "cpu_state": "state-green",
+                    "ram_pct": 62.0,
+                    "ram_state": "state-amber",
+                    "disk_pct": 51.0,
+                    "disk_state": "state-green",
+                    "est_vms": 5,
+                },
+                {
+                    "name": "pve-node02",
+                    "cpu_pct": 91.0,
+                    "cpu_state": "state-red",
+                    "ram_pct": 74.0,
+                    "ram_state": "state-amber",
+                    "disk_pct": 88.0,
+                    "disk_state": "state-amber",
+                    "est_vms": 1,
+                },
+            ]
+    
+            body = render_cluster_dashboard(nodes).encode("utf-8")
+    
+        else:
             self.send_response(404)
             self.send_header("Content-Type", "text/plain; charset=utf-8")
             self.end_headers()
             self.wfile.write(b"Not found\n")
             return
-
-        if not require_basic_auth(self, cfg.server.users_file):
-            return
-
-        snap = snapshot(cfg.mountpoints)
-        body = render_dashboard(cfg, snap).encode("utf-8")
-
+    
         self.send_response(200)
         self.send_header("Content-Type", "text/html; charset=utf-8")
         self.send_header("Content-Length", str(len(body)))
         self.send_header("Cache-Control", "no-store")
         self.end_headers()
         self.wfile.write(body)
-
-    def _serve_style(self) -> None:
-        p = _static_path()
-        if not p.exists():
-            self.send_response(404)
-            self.send_header("Content-Type", "text/plain; charset=utf-8")
-            self.end_headers()
-            self.wfile.write(b"style.css missing\n")
-            return
-
-        data = p.read_bytes()
-        self.send_response(200)
-        self.send_header("Content-Type", "text/css; charset=utf-8")
-        self.send_header("Content-Length", str(len(data)))
-        self.send_header("Cache-Control", "public, max-age=3600")
-        self.end_headers()
-        self.wfile.write(data)
 
     def log_message(self, fmt: str, *args) -> None:  # noqa: N802
         _LOG.info("%s - %s", self.address_string(), fmt % args)

@@ -126,3 +126,71 @@ table th, table td {
 }
 
 table th { color: var(--muted); font-weight: 600; }
+
+/* ================================
+   MULTI-NODE GRID & CARDS
+   ================================ */
+
+.grid-nodes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+}
+
+/* Node card (cluster overview) */
+.node-card {
+  background: var(--panel);
+  border: 1px solid #1e2a3d;
+  border-radius: 12px;
+  padding: 14px;
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+}
+
+.node-card:hover {
+  transform: translateY(-1px);
+}
+
+.node-card h2 {
+  font-size: 15px;
+  margin: 0 0 8px 0;
+}
+
+/* Node status halo */
+.node-card.state-green {
+  box-shadow: 0 0 0 1px rgba(46, 204, 113, 0.45);
+}
+
+.node-card.state-amber {
+  box-shadow: 0 0 0 1px rgba(243, 156, 18, 0.45);
+}
+
+.node-card.state-red {
+  box-shadow: 0 0 0 1px rgba(231, 76, 60, 0.45);
+}
+
+/* Compact rows for node cards */
+.row.compact {
+  grid-template-columns: 70px 1fr 90px;
+  gap: 10px;
+  padding: 6px 0;
+  font-size: 12px;
+}
+
+.row.compact .label {
+  font-size: 12px;
+}
+
+.row.compact .bar {
+  height: 8px;
+}
+
+.row.compact .value {
+  font-size: 12px;
+}
+
+/* Clickable card */
+.node-card a {
+  color: inherit;
+  text-decoration: none;
+  display: block;
+}
