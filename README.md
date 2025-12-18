@@ -83,6 +83,7 @@ cp config.example.ini config.ini
 Configura:
 - Puertos HTTP / HTTPS
 - Rutas de certificados TLS
+- Modo de monitoreo de almacenamiento
 
 ---
 
@@ -131,32 +132,6 @@ https://<IP_DEL_HOST>:<PUERTO_HTTPS>/
 
 ---
 
-## 🔍 Smoke tests rápidos
-
-### Comprobar redirección HTTP → HTTPS
-
-```bash
-curl -I http://<IP_DEL_HOST>:<PUERTO_HTTP>/
-```
-
-### Comprobar autenticación y HTTPS
-
-```bash
-curl -k -u usuario:password https://<IP_DEL_HOST>:<PUERTO_HTTPS>/
-```
-
----
-
-## 🧪 Comprobación rápida en Proxmox VE
-
-Para verificar que no hay errores de sintaxis:
-
-```bash
-python3 -m py_compile proxreport/*.py
-```
-
----
-
 ## 🖥️ Despliegue en Proxmox VE (systemd)
 
 ### Estructura recomendada
@@ -196,14 +171,62 @@ systemctl daemon-reload
 systemctl enable --now proxreport
 ```
 
----
-
 ### Puertos 80 / 443
 
 Si deseas escuchar directamente en los puertos **80/443**, revisa y habilita las líneas de capacidades comentadas en el archivo:
 
 ```text
 systemd/proxreport.service
+```
+
+---
+
+## 💾 Configuración de almacenamiento
+
+ProxReport soporta 2 modos de monitoreo de almacenamiento:
+
+**total (recomendado por Proxmox)**
+Agrega todo el almacenamiento visible del nodo utilizando `df --total`, proporcionando una visión realista del espacio en disco disponible para máquinas virtuales y contenedores.
+
+```ini
+[storage]
+mode = total
+# mountpoints = /
+```
+**mountpoints (avanzado)**
+Monitorea únicamente puntos de montaje específicos del sistema de archivos.
+
+```ini
+[storage]
+mode = mountpoints
+mountpoints = /,/var/lib/vz,/mnt/pve/vm-storage
+```
+> ℹ️ Elija el modo que mejor se adapte al diseño de su almacenamiento Proxmox.
+
+---
+
+## 🔍 Smoke tests rápidos
+
+### Comprobar redirección HTTP → HTTPS
+
+```bash
+curl -I http://<IP_DEL_HOST>:<PUERTO_HTTP>/
+```
+
+### Comprobar autenticación y HTTPS
+
+```bash
+curl -k -u usuario:password https://<IP_DEL_HOST>:<PUERTO_HTTPS>/
+```
+
+---
+
+## 🧪 Comprobación rápida en Proxmox VE
+
+Para verificar que no hay errores de sintaxis:
+
+```bash
+python3 -m py_compile proxreport/*.py
 ```
 
 ---
